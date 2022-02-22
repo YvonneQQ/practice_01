@@ -1,0 +1,49 @@
+import rsa
+import socket
+import threading
+import pickle
+
+
+def write(what): #将传过来的数据写入文件中
+    path = "C:\\Users\\misaka\\Desktop\\北京电子科技学院\\python\\20181221.txt"
+    path = path.strip()
+    path = path.rstrip("\\")
+    file = open(path, 'a')
+    file.write(what)
+    print('写入成功')
+    file.close()
+
+def RsaDecrypt(str, pk): #rsa解密
+    Decrypt_Str = rsa.decrypt(str, pk)
+    Decrypt_Str_1 = Decrypt_Str.decode('utf8')
+    return Decrypt_Str_1
+
+
+def RecvMessage(Sock, test): #接受客户端传过来的数据
+    while True:
+        try:
+            Message = Sock.recv(1024)
+            (recvdata, PrivateKey) = pickle.loads(Message) #从bytes对象读取pickle对象层次结构并返回其中指定的重构对象层次结构。获取传入的数据和私钥
+            decryptdata = RsaDecrypt(recvdata, PrivateKey)
+            if len(Message) > 0: #判断数据是否接收完毕
+                print("receive message:" + decryptdata)
+                write(decryptdata)
+        except:
+            print("通信结束")
+            break
+
+
+def main():
+    ServerSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ServerSock.bind(('127.0.0.1', 1234))
+    ServerSock.listen(5) #监听数量
+    print("listening......") #创建连接
+    while True:
+        ConSock, addr = ServerSock.accept() #接收数据
+        print('connection succeed' + '\n' + 'you can chat online')
+        s = threading.Thread(target=RecvMessage, args=(ConSock, None)) #实例化2个Thread类，传递函数及其参数，并将线程对象放入一个列表中
+        s.start()
+
+
+if __name__ == '__main__':
+    main()
