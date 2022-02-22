@@ -1,0 +1,41 @@
+import rsa
+import socket
+import threading
+import pickle
+
+def RsaEncrypt(str): #rsa加密
+    (PubKey, PrivateKey) = rsa.newkeys(1024) #创建1024长度的公钥和密钥
+    content = str.encode('utf8')
+    Encrypt_Str = rsa.encrypt(content, PubKey)
+    return (Encrypt_Str, PrivateKey)
+
+
+def SendMessage(Sock, test): #读取文件数据并发送到服务端
+    path = "C:\\Users\\misaka\\Desktop\\北京电子科技学院\\python\\1812\\20181221.txt" #文件路径
+    path = path.strip()
+    path = path.rstrip("\\")
+    file = open(path, 'r')
+    while 1:
+        data = file.readline() #按文件行数进行读取
+        if not data: #判断文件是否读完
+            print('file send over...')
+            break
+        SendData = data
+        (encryptdata, PrivateKey) = RsaEncrypt(SendData) #RSA加密
+        print('encrypted data is ' + str(encryptdata))
+        Message = pickle.dumps([encryptdata, PrivateKey]) #将对象的pickled表示作为bytes对象返回
+        if len(SendData) > 0:
+            Sock.send(Message) #发送数据
+    file.close()
+
+
+def main():
+    ClientSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ClientSock.connect(("127.0.0.1", 1234)) #创建连接
+    print('connection succeed, chat start!')
+    s = threading.Thread(target=SendMessage, args=(ClientSock, None)) #实例化2个Thread类，传递函数及其参数，并将线程对象放入一个列表中
+    s.start()
+
+
+if __name__ == '__main__':
+    main()
